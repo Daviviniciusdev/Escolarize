@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras permissivas para desenvolvimento
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // Regras mais seguras (para produção)
+    /*
+    match /users/{userId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth.uid == userId;
+    }
+    */
+  }
+}

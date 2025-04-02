@@ -1,0 +1,28 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "sistemaescolar-d50ef",
+          "appId": "1:715388557527:android:9c29cf748742eaa2173892",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "sistemaescolar-d50ef",
+          "configurations": {
+            "android": "1:715388557527:android:9c29cf748742eaa2173892",
+            "ios": "1:715388557527:ios:0d8145b9ff297cad173892",
+            "web": "1:715388557527:web:427db1b82fc6efa9173892",
+            "windows": "1:715388557527:web:6f837febeb48c55b173892"
+          }
+        }
+      }
+    }
+  },
+  "functions": {
+    "source": "functions"
+  }
+  
+}
