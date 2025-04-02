@@ -2,6 +2,32 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+	<key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.yourcompany.escolarize</string>
+            </array>
+        </dict>
+    </array>
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>Este aplicativo precisa acessar a câmera para fotos do perfil</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Este aplicativo precisa acessar a galeria para fotos do perfil</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Este aplicativo precisa acessar o microfone para mensagens de voz</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Este aplicativo precisa acessar sua localização</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Este aplicativo usa Face ID para autenticação segura</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
