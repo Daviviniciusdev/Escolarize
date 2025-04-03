@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, sort_child_properties_last, avoid_print, unused_field
+// ignore_for_file: library_private_types_in_public_api, sort_child_properties_last, avoid_print, unused_field, unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -237,6 +237,7 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
               final userId = users[index].id;
               final userName =
                   userData['nome'] ?? userData['name'] ?? 'Nome não definido';
+              final hasClass = userData['serie'] != null;
 
               return Card(
                 elevation: 2,
@@ -269,12 +270,47 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              userName,
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    userName,
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                // Adicionar botão para matricular (apenas para alunos sem turma)
+                                if (role == UserRole.student && !hasClass)
+                                  OutlinedButton.icon(
+                                    onPressed: () => _showAddToClassDialog(
+                                        userId,
+                                        userName,
+                                        userData['email'] ?? ''),
+                                    icon: Icon(
+                                      Icons.add_circle_outline,
+                                      color: AppColors.primaryBlue,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      'Matricular',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 0),
+                                      minimumSize: Size(0, 30),
+                                      side: BorderSide(
+                                          color: AppColors.primaryBlue),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             SizedBox(height: 4),
                             Row(
@@ -299,17 +335,14 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                                   Icon(
                                     Icons.class_,
                                     size: 16,
-                                    color: userData['serie'] == null
-                                        ? Colors.red
-                                        : Colors.green,
+                                    color: hasClass ? Colors.green : Colors.red,
                                   ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Turma: ${userData['serie'] ?? 'Não matriculado'}',
                                     style: GoogleFonts.poppins(
-                                      color: userData['serie'] == null
-                                          ? Colors.red
-                                          : Colors.green,
+                                      color:
+                                          hasClass ? Colors.green : Colors.red,
                                     ),
                                   ),
                                 ],
@@ -899,5 +932,136 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
       print('❌ Erro original ao criar usuário: $e');
       throw e;
     }
+  }
+
+  void _showAddToClassDialog(String userId, String userName, String email) {
+    String? selectedSerie;
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.school, color: AppColors.primaryBlue),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Matricular Aluno',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryBlue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aluno: $userName',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Email: $email',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedSerie,
+                  decoration: InputDecoration(
+                    labelText: 'Turma',
+                    icon: Icon(Icons.class_),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('Selecione a turma'),
+                    ),
+                    ...[
+                      '4m1',
+                      '4m2',
+                      '4v1',
+                      '4v2',
+                      '5m1',
+                      '5m2',
+                      '5v1',
+                      '5v2',
+                    ].map((serie) {
+                      return DropdownMenuItem(
+                        value: serie,
+                        child: Text(serie.toUpperCase()),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: (value) {
+                    setState(() => selectedSerie = value);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: isLoading || selectedSerie == null
+                  ? null
+                  : () async {
+                      setState(() => isLoading = true);
+                      try {
+                        // 1. Atualizar documento do usuário
+                        await _firestore
+                            .collection('users')
+                            .doc(userId)
+                            .update({'serie': selectedSerie});
+
+                        // 2. Adicionar à turma
+                        await _addStudentToClass(
+                          userId,
+                          userName,
+                          email,
+                          selectedSerie!,
+                        );
+
+                        Navigator.pop(context);
+                        _mostrarMensagem(
+                            'Aluno matriculado na turma $selectedSerie com sucesso!');
+                      } catch (e) {
+                        print('Erro ao matricular aluno: $e');
+                        _mostrarMensagem(
+                            'Erro ao matricular aluno: ${e.toString()}',
+                            isError: true);
+                      } finally {
+                        if (context.mounted) setState(() => isLoading = false);
+                      }
+                    },
+              child: isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text('Matricular'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
