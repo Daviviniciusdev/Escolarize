@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:Escolarize/models/user_model.dart';
 import 'package:Escolarize/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 
 class AdminUserManagementScreen extends StatefulWidget {
   final UserModel adminUser;
@@ -20,6 +22,7 @@ class AdminUserManagementScreen extends StatefulWidget {
 class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final _storage = const FlutterSecureStorage();
   int _selectedIndex = 0;
 
   @override
@@ -84,6 +87,16 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showCreateUserDialog,
+        icon: Icon(Icons.person_add),
+        label: Text('Novo Usuário',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w500,
+              color: const Color.fromARGB(255, 189, 185, 185),
+            )),
+        backgroundColor: AppColors.primaryBlue,
+      ),
     );
   }
 
@@ -100,10 +113,9 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color:
-                  isSelected
-                      ? Colors.transparent
-                      : Colors.white.withOpacity(0.5),
+              color: isSelected
+                  ? Colors.transparent
+                  : Colors.white.withOpacity(0.5),
               width: 1,
             ),
           ),
@@ -133,11 +145,10 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
 
   Widget _buildUserList(UserRole role) {
     return StreamBuilder<QuerySnapshot>(
-      stream:
-          _firestore
-              .collection('users')
-              .where('role', isEqualTo: role.toString().split('.').last)
-              .snapshots(),
+      stream: _firestore
+          .collection('users')
+          .where('role', isEqualTo: role.toString().split('.').last)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return _buildErrorState('Erro ao carregar usuários');
@@ -224,19 +235,17 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                                   Icon(
                                     Icons.class_,
                                     size: 16,
-                                    color:
-                                        userData['serie'] == null
-                                            ? Colors.red
-                                            : Colors.green,
+                                    color: userData['serie'] == null
+                                        ? Colors.red
+                                        : Colors.green,
                                   ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Turma: ${userData['serie'] ?? 'Não matriculado'}',
                                     style: GoogleFonts.poppins(
-                                      color:
-                                          userData['serie'] == null
-                                              ? Colors.red
-                                              : Colors.green,
+                                      color: userData['serie'] == null
+                                          ? Colors.red
+                                          : Colors.green,
                                     ),
                                   ),
                                 ],
@@ -244,11 +253,10 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                             ],
                             if (role == UserRole.teacher)
                               FutureBuilder<DocumentSnapshot>(
-                                future:
-                                    _firestore
-                                        .collection('teachers')
-                                        .doc(userId)
-                                        .get(),
+                                future: _firestore
+                                    .collection('teachers')
+                                    .doc(userId)
+                                    .get(),
                                 builder: (context, teacherSnapshot) {
                                   if (teacherSnapshot.hasData &&
                                       teacherSnapshot.data!.exists) {
@@ -285,15 +293,6 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                               ),
                           ],
                         ),
-                      ),
-
-                      // Delete button
-                      IconButton(
-                        icon: Icon(Icons.delete_outline),
-                        color: Colors.red,
-                        onPressed:
-                            () => _excluirUsuario(userId, userData['email']),
-                        tooltip: 'Excluir usuário',
                       ),
                     ],
                   ),
@@ -342,11 +341,7 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
 
   Widget _buildEmptyState(UserRole role) {
     String message =
-        'Nenhum ${role == UserRole.student
-            ? 'aluno'
-            : role == UserRole.teacher
-            ? 'professor'
-            : 'funcionário'} cadastrado';
+        'Nenhum ${role == UserRole.student ? 'aluno' : role == UserRole.teacher ? 'professor' : 'funcionário'} cadastrado';
 
     return Center(
       child: Column(
@@ -356,8 +351,8 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
             role == UserRole.student
                 ? Icons.school_outlined
                 : role == UserRole.teacher
-                ? Icons.person_2_outlined
-                : Icons.admin_panel_settings_outlined,
+                    ? Icons.person_2_outlined
+                    : Icons.admin_panel_settings_outlined,
             size: 48,
             color: Colors.grey[400],
           ),
@@ -371,88 +366,405 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     );
   }
 
-  void _excluirUsuario(String userId, String userEmail) async {
-    try {
-      bool confirmacao = await _mostrarDialogConfirmacao(
-        'Deseja realmente excluir este usuário?',
-        'Usuário: $userEmail',
+  void _mostrarMensagem(String mensagem, {bool isError = false}) {
+    if (mounted) {
+      // Verificar se o widget ainda está montado
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensagem),
+          backgroundColor: isError ? Colors.red : Colors.green,
+        ),
       );
-
-      if (!confirmacao) return;
-
-      DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(userId).get();
-      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-
-      if (userData['role'] == 'student') {
-        String? serie = userData['serie'];
-        if (serie != null) {
-          DocumentReference turmaRef = _firestore
-              .collection('turmas')
-              .doc(serie);
-          DocumentSnapshot turmaDoc = await turmaRef.get();
-
-          if (turmaDoc.exists) {
-            Map<String, dynamic> turmaData =
-                turmaDoc.data() as Map<String, dynamic>;
-            List<dynamic> alunos = List.from(turmaData['alunos'] ?? []);
-            alunos.removeWhere(
-              (aluno) => aluno['uid'] == userId || aluno['email'] == userEmail,
-            );
-
-            await turmaRef.update({
-              'alunos': alunos,
-              'ultimaAtualizacao': FieldValue.serverTimestamp(),
-            });
-          }
-        }
-      }
-
-      await _firestore.collection('users').doc(userId).delete();
-
-      try {
-        await FirebaseAuth.instance.currentUser?.delete();
-      } catch (e) {
-        print('Erro ao excluir usuário do Auth: $e');
-      }
-
-      _mostrarMensagem('Usuário excluído com sucesso!');
-    } catch (e) {
-      _mostrarMensagem(
-        'Erro ao excluir usuário: ${e.toString()}',
-        isError: true,
-      );
+    } else {
+      // Registrar mensagem somente no console se o widget não estiver montado
+      print('❗ Mensagem não exibida (widget desmontado): $mensagem');
     }
   }
 
-  void _mostrarMensagem(String mensagem, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensagem),
-        backgroundColor: isError ? Colors.red : Colors.green,
+  void _showCreateUserDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final _nomeController = TextEditingController();
+    final _emailController = TextEditingController();
+    final _senhaController = TextEditingController();
+    final _adminPasswordController = TextEditingController();
+    String? _selectedSerie;
+    UserRole _selectedRole = UserRole.student;
+    bool _isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.person_add, color: AppColors.primaryBlue),
+              SizedBox(width: 12),
+              Text(
+                'Novo Usuário',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryBlue,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Campo Nome
+                  TextFormField(
+                    controller: _nomeController,
+                    decoration: InputDecoration(
+                      labelText: 'Nome Completo',
+                      icon: Icon(Icons.person),
+                    ),
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Campo obrigatório' : null,
+                  ),
+                  SizedBox(height: 16),
+
+                  // Campo Email
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'E-mail',
+                      icon: Icon(Icons.email),
+                    ),
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Campo obrigatório';
+                      if (!value!.contains('@')) return 'E-mail inválido';
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16),
+
+                  // Campo Senha
+                  TextFormField(
+                    controller: _senhaController,
+                    decoration: InputDecoration(
+                      labelText: 'Senha',
+                      icon: Icon(Icons.lock),
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) return 'Campo obrigatório';
+                      if (value!.length < 6) return 'Mínimo de 6 caracteres';
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16),
+
+                  // Campo Senha do Admin
+                  TextFormField(
+                    controller: _adminPasswordController,
+                    decoration: InputDecoration(
+                      labelText: 'Senha do Admin',
+                      helperText: 'Confirme sua senha para criar usuário',
+                      icon: Icon(Icons.lock),
+                    ),
+                    obscureText: true,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Senha necessária' : null,
+                  ),
+                  SizedBox(height: 16),
+
+                  // Seleção de Tipo de Usuário
+                  DropdownButtonFormField<UserRole>(
+                    value: _selectedRole,
+                    decoration: InputDecoration(
+                      labelText: 'Tipo de Usuário',
+                      icon: Icon(Icons.badge),
+                    ),
+                    items: UserRole.values.map((role) {
+                      return DropdownMenuItem(
+                        value: role,
+                        child: Text(
+                          role == UserRole.admin
+                              ? 'Administrador'
+                              : role == UserRole.teacher
+                                  ? 'Professor'
+                                  : 'Aluno',
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedRole = value!;
+                        if (value != UserRole.student) {
+                          _selectedSerie = null;
+                        }
+                      });
+                    },
+                  ),
+                  SizedBox(height: 16),
+
+                  // Campo Série (apenas para alunos)
+                  if (_selectedRole == UserRole.student)
+                    DropdownButtonFormField<String>(
+                      value: _selectedSerie,
+                      decoration: InputDecoration(
+                        labelText: 'Série/Turma',
+                        icon: Icon(Icons.school),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text('Selecione a série'),
+                        ),
+                        ...[
+                          '4m1',
+                          '4m2',
+                          '4v1',
+                          '4v2',
+                          '5m1',
+                          '5m2',
+                          '5v1',
+                          '5v2',
+                        ].map((serie) {
+                          return DropdownMenuItem(
+                            value: serie,
+                            child: Text(serie.toUpperCase()),
+                          );
+                        }).toList(),
+                      ],
+                      validator: (value) =>
+                          value == null ? 'Selecione uma série' : null,
+                      onChanged: (value) {
+                        setState(() => _selectedSerie = value);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      if (_formKey.currentState?.validate() ?? false) {
+                        setState(() => _isLoading = true);
+
+                        try {
+                          // Obter e armazenar senha do admin
+                          final adminEmail = widget.adminUser.email;
+                          final adminPassword =
+                              _adminPasswordController.text.trim();
+
+                          // Armazenar credenciais temporariamente para caso de emergência
+                          await _storage.write(
+                              key: 'admin_email_backup', value: adminEmail);
+                          await _storage.write(
+                              key: 'admin_pwd_backup', value: adminPassword);
+
+                          // Criar usuário sem afetar a sessão atual
+                          await _createUserWithoutSignout(
+                            email: _emailController.text.trim(),
+                            password: _senhaController.text.trim(),
+                            name: _nomeController.text.trim(),
+                            role: _selectedRole,
+                            serie: _selectedRole == UserRole.student
+                                ? _selectedSerie
+                                : null,
+                          );
+
+                          // Limpar backup após sucesso
+                          await _storage.delete(key: 'admin_email_backup');
+                          await _storage.delete(key: 'admin_pwd_backup');
+
+                          Navigator.pop(context);
+                          _mostrarMensagem('Usuário criado com sucesso!');
+                        } catch (e) {
+                          print('Erro ao criar usuário: $e');
+                          _mostrarMensagem(
+                              'Erro ao criar usuário: ${e.toString()}',
+                              isError: true);
+                        } finally {
+                          // Limpar credenciais em caso de erro também
+                          await _storage.delete(key: 'admin_email_backup');
+                          await _storage.delete(key: 'admin_pwd_backup');
+
+                          if (context.mounted) {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AdminUserManagementScreen(
+                                    adminUser: widget.adminUser,
+                                  ),
+                                ));
+                            if (mounted) {
+                              _mostrarMensagem('Usuário criado com sucesso!');
+                            }
+                          } else if (mounted) {
+                            setState(() => _isLoading = false);
+                          }
+                        }
+                      }
+                    },
+              child: _isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text('Criar'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<bool> _mostrarDialogConfirmacao(String titulo, String conteudo) async {
-    return await showDialog<bool>(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text(titulo),
-                content: Text(conteudo),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text('Cancelar'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: Text('Confirmar'),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
+  Future<void> _addStudentToClass(
+    String userId,
+    String nome,
+    String email,
+    String serie,
+  ) async {
+    DocumentReference turmaRef = _firestore.collection('turmas').doc(serie);
+    DocumentSnapshot turmaDoc = await turmaRef.get();
+
+    Map<String, dynamic> alunoData = {
+      'uid': userId,
+      'nome': nome,
+      'email': email,
+      'serie': serie,
+    };
+
+    if (!turmaDoc.exists) {
+      await turmaRef.set({
+        'nome': serie,
+        'alunos': [alunoData],
+        'criadoEm': FieldValue.serverTimestamp(),
+        'ultimaAtualizacao': FieldValue.serverTimestamp(),
+      });
+    } else {
+      await turmaRef.update({
+        'alunos': FieldValue.arrayUnion([alunoData]),
+        'ultimaAtualizacao': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  Future<void> _createUserWithoutSignout({
+    required String email,
+    required String password,
+    required String name,
+    required UserRole role,
+    String? serie,
+  }) async {
+    try {
+      // 1. Criar usuário no Firebase Auth
+      // Isso pode deslogar o admin temporariamente, mas o relogaremos depois
+      await _createUserInFirebaseAuth(email, password, "temp_id");
+
+      // 2. Obter o UID do usuário recém-criado
+      final newUserCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      final userId = newUserCredential.user!.uid;
+
+      // 3. Relogar o admin
+      final adminEmail = await _storage.read(key: 'admin_email_backup');
+      final adminPassword = await _storage.read(key: 'admin_pwd_backup');
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: adminEmail!, password: adminPassword!);
+
+      // 4. Criar usuário no Firestore
+      final novoUsuario = UserModel(
+        id: userId,
+        name: name,
+        email: email,
+        role: role,
+        serie: serie,
+      );
+
+      await _firestore.collection('users').doc(userId).set(novoUsuario.toMap());
+
+      // 5. Se for aluno, adicionar à turma
+      if (role == UserRole.student && serie != null) {
+        await _addStudentToClass(userId, name, email, serie);
+      }
+    } catch (e) {
+      print('Erro detalhado na criação: $e');
+
+      // Em qualquer caso de erro, tentar reconectar o admin
+      try {
+        final adminEmail = await _storage.read(key: 'admin_email_backup');
+        final adminPassword = await _storage.read(key: 'admin_pwd_backup');
+        if (adminEmail != null && adminPassword != null) {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: adminEmail, password: adminPassword);
+        }
+      } catch (_) {}
+
+      throw e;
+    }
+  }
+
+  Future<void> _createUserInFirebaseAuth(
+      String email, String password, String userId) async {
+    try {
+      // Obter backup das credenciais do admin (já foram salvas antes)
+      final adminEmail = await _storage.read(key: 'admin_email_backup');
+      final adminPassword = await _storage.read(key: 'admin_pwd_backup');
+
+      if (adminEmail == null || adminPassword == null) {
+        throw Exception('Credenciais do admin não disponíveis');
+      }
+
+      // Criar usuário diretamente no Firebase Auth
+      // Isso deslogará o admin temporariamente
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Após criar o usuário, imediatamente faça login com o admin novamente
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: adminEmail,
+        password: adminPassword,
+      );
+
+      // Verificar se o admin está logado novamente
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null || currentUser.email != adminEmail) {
+        throw Exception('Falha ao reconectar o admin');
+      }
+
+      print('✅ Usuário criado com sucesso e admin mantido logado');
+    } catch (e) {
+      // Em caso de erro, tente relogar o admin
+      try {
+        final adminEmail = await _storage.read(key: 'admin_email_backup');
+        final adminPassword = await _storage.read(key: 'admin_pwd_backup');
+
+        if (adminEmail != null && adminPassword != null) {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: adminEmail,
+            password: adminPassword,
+          );
+
+          print('🔄 Admin reconectado após erro');
+        }
+      } catch (_) {
+        // Falha na tentativa de reconexão
+        print('⚠️ Falha na reconexão do admin após erro');
+      }
+
+      print('❌ Erro original ao criar usuário: $e');
+      throw e;
+    }
   }
 }

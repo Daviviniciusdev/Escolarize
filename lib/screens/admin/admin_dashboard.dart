@@ -156,7 +156,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bem-vindo,',
+                  'Bem-vindo(a),',
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 Text(
@@ -210,53 +210,46 @@ class _AdminDashboardState extends State<AdminDashboard> {
         icon: Icons.fact_check,
         label: 'Frequência',
         color: Color(0xFF2196F3),
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => AdminAttendanceScreen(adminUser: widget.user),
-              ),
-            ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminAttendanceScreen(adminUser: widget.user),
+          ),
+        ),
       ),
       DashboardItem(
         icon: Icons.school,
         label: 'Gerenciar\nTurmas',
         color: Color(0xFF9C27B0),
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => AdminClassManagement(adminUser: widget.user),
-              ),
-            ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminClassManagement(adminUser: widget.user),
+          ),
+        ),
       ),
       DashboardItem(
         icon: Icons.announcement,
         label: 'Comunicados',
         color: Color(0xFFE91E63),
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) =>
-                        AdminAnnouncementsScreen(adminUser: widget.user),
-              ),
-            ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                AdminAnnouncementsScreen(adminUser: widget.user),
+          ),
+        ),
       ),
       DashboardItem(
         icon: Icons.supervised_user_circle,
         label: 'Relatório\nDe alunos',
         color: Color(0xFFFF9800),
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AdminReportScreen(adminUser: widget.user),
-              ),
-            ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AdminReportScreen(adminUser: widget.user),
+          ),
+        ),
       ),
       DashboardItem(
         icon: Icons.settings,
@@ -396,9 +389,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder:
-                                      (context) =>
-                                          AdminProfileScreen(user: widget.user),
+                                  builder: (context) =>
+                                      AdminProfileScreen(user: widget.user),
                                 ),
                               );
                             },
@@ -457,67 +449,66 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _desenvolvimento() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Wrap(
+          children: [
+            Icon(
+              Icons.construction,
+              color: AppColors.primaryBlue,
+              size: 28,
             ),
-            title: Wrap(
-              children: [
-                Icon(
-                  Icons.construction,
-                  color: AppColors.primaryBlue,
-                  size: 28,
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Em Desenvolvimento',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
-              ],
-            ),
-            content: Container(
-              width: double.maxFinite,
-              constraints: BoxConstraints(maxWidth: 300),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Esta funcionalidade está em desenvolvimento e estará disponível em breve!',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[800],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Icon(Icons.engineering, size: 48, color: Colors.grey[400]),
-                ],
+            SizedBox(width: 12),
+            Text(
+              'Em Desenvolvimento',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryBlue,
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: BoxConstraints(maxWidth: 300),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Text(
-                  'OK, Entendi',
+                  'Esta funcionalidade está em desenvolvimento e estará disponível em breve!',
                   style: GoogleFonts.poppins(
-                    color: AppColors.primaryBlue,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: Colors.grey[800],
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
+              SizedBox(height: 16),
+              Icon(Icons.engineering, size: 48, color: Colors.grey[400]),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK, Entendi',
+              style: GoogleFonts.poppins(
+                color: AppColors.primaryBlue,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
