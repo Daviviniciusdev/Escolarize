@@ -8,6 +8,8 @@ import 'package:Escolarize/utils/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 
 class AdminUserManagementScreen extends StatefulWidget {
   final UserModel adminUser;
@@ -23,7 +25,69 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _storage = const FlutterSecureStorage();
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  bool _isBiometricAvailable = false;
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    if (!mounted) return;
+
+    try {
+      // Verifica se o hardware suporta biometria
+      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
+      if (!canCheckBiometrics) {
+        setState(() => _isBiometricAvailable = false);
+        return;
+      }
+
+      // Verifica quais tipos de biometria estão disponíveis
+      final availableBiometrics = await _localAuth.getAvailableBiometrics();
+
+      // Verifica se há biometrias cadastradas
+      final hasBiometrics =
+          availableBiometrics.contains(BiometricType.fingerprint) ||
+              availableBiometrics.contains(BiometricType.face) ||
+              availableBiometrics.contains(BiometricType.strong);
+
+      if (mounted) {
+        setState(() => _isBiometricAvailable = hasBiometrics);
+      }
+    } catch (e) {
+      print('Erro ao verificar biometria: $e');
+      if (mounted) {
+        setState(() => _isBiometricAvailable = false);
+      }
+    }
+  }
+
+  Future<bool> _authenticateWithBiometrics() async {
+    try {
+      // Tenta autenticar
+      final authenticated = await _localAuth.authenticate(
+        localizedReason:
+            'Por favor, use sua biometria para criar um novo usuário',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false, // Permite PIN como fallback
+          useErrorDialogs: true,
+        ),
+      );
+
+      return authenticated;
+    } on PlatformException catch (e) {
+      print('Erro na autenticação biométrica: ${e.message}');
+      return false;
+    } catch (e) {
+      print('Erro inesperado: $e');
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +450,8 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     final _nomeController = TextEditingController();
     final _emailController = TextEditingController();
     final _senhaController = TextEditingController();
-    final _adminPasswordController = TextEditingController();
+    final _adminPasswordController =
+        TextEditingController(); // Mantido para backup
     String? _selectedSerie;
     UserRole _selectedRole = UserRole.student;
     bool _isLoading = false;
@@ -457,20 +522,49 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                   ),
                   SizedBox(height: 16),
 
-                  // Campo Senha do Admin
-                  TextFormField(
-                    controller: _adminPasswordController,
-                    decoration: InputDecoration(
-                      labelText: 'Senha do Admin',
-                      helperText: 'Confirme sua senha para criar usuário',
-                      icon: Icon(Icons.lock),
+                  // Substituído o campo de senha do admin por informação de biometria
+                  if (_isBiometricAvailable)
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.primaryBlue.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.fingerprint, color: AppColors.primaryBlue),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Autenticação biométrica será solicitada ao criar o usuário',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    obscureText: true,
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Senha necessária' : null,
-                  ),
+
+                  // Campo senha do admin (backup caso biometria não esteja disponível)
+                  if (!_isBiometricAvailable)
+                    TextFormField(
+                      controller: _adminPasswordController,
+                      decoration: InputDecoration(
+                        labelText: 'Senha do Admin',
+                        helperText: 'Confirme sua senha para criar usuário',
+                        icon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Senha necessária' : null,
+                    ),
                   SizedBox(height: 16),
 
+                  // Resto do formulário permanece igual...
                   // Seleção de Tipo de Usuário
                   DropdownButtonFormField<UserRole>(
                     value: _selectedRole,
@@ -553,18 +647,57 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
                         setState(() => _isLoading = true);
 
                         try {
-                          // Obter e armazenar senha do admin
-                          final adminEmail = widget.adminUser.email;
-                          final adminPassword =
-                              _adminPasswordController.text.trim();
+                          // Se biometria disponível, solicitar autenticação
+                          if (_isBiometricAvailable) {
+                            final authenticated =
+                                await _authenticateWithBiometrics();
+                            if (!authenticated) {
+                              throw Exception('Autenticação biométrica falhou');
+                            }
 
-                          // Armazenar credenciais temporariamente para caso de emergência
-                          await _storage.write(
-                              key: 'admin_email_backup', value: adminEmail);
-                          await _storage.write(
-                              key: 'admin_pwd_backup', value: adminPassword);
+                            // Autenticação com sucesso, armazenar email do admin
+                            final adminEmail = widget.adminUser.email;
+                            // Recuperar senha do secure storage se disponível
+                            final adminPassword =
+                                await _storage.read(key: 'admin_password');
 
-                          // Criar usuário sem afetar a sessão atual
+                            if (adminPassword == null) {
+                              throw Exception(
+                                  'Senha do admin não disponível. Faça login novamente.');
+                            }
+
+                            // Armazenar credenciais para relogin
+                            await _storage.write(
+                                key: 'admin_email_backup', value: adminEmail);
+                            await _storage.write(
+                                key: 'admin_pwd_backup', value: adminPassword);
+                          } else {
+                            // Sem biometria, usar senha do admin
+                            final adminEmail = widget.adminUser.email;
+                            final adminPassword =
+                                _adminPasswordController.text.trim();
+
+                            // Validar senha do admin
+                            try {
+                              final credential = await FirebaseAuth.instance
+                                  .signInWithEmailAndPassword(
+                                      email: adminEmail,
+                                      password: adminPassword);
+
+                              // Login bem sucedido, guarda credenciais e faz login novamente
+                              await _storage.write(
+                                  key: 'admin_email_backup', value: adminEmail);
+                              await _storage.write(
+                                  key: 'admin_pwd_backup',
+                                  value: adminPassword);
+
+                              // Na prática, o admin já está logado agora
+                            } catch (e) {
+                              throw Exception('Senha do admin incorreta');
+                            }
+                          }
+
+                          // Criar usuário com as credenciais verificadas
                           await _createUserWithoutSignout(
                             email: _emailController.text.trim(),
                             password: _senhaController.text.trim(),
@@ -593,13 +726,13 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
 
                           if (context.mounted) {
                             Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      AdminUserManagementScreen(
-                                    adminUser: widget.adminUser,
-                                  ),
-                                ));
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AdminUserManagementScreen(
+                                  adminUser: widget.adminUser,
+                                ),
+                              ),
+                            );
                             if (mounted) {
                               _mostrarMensagem('Usuário criado com sucesso!');
                             }

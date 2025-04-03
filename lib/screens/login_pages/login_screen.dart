@@ -82,8 +82,8 @@ class _LoginScreenState extends State<LoginScreen>
       // Verifica se há biometrias cadastradas
       final hasBiometrics =
           availableBiometrics.contains(BiometricType.fingerprint) ||
-          availableBiometrics.contains(BiometricType.face) ||
-          availableBiometrics.contains(BiometricType.strong);
+              availableBiometrics.contains(BiometricType.face) ||
+              availableBiometrics.contains(BiometricType.strong);
 
       if (mounted) {
         setState(() => _isBiometricAvailable = hasBiometrics);
@@ -228,11 +228,10 @@ class _LoginScreenState extends State<LoginScreen>
       // Store credentials securely
       await _storeCredentials(email, password);
 
-      final userDoc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userCredential.user!.uid)
-              .get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
 
       // Log login attempt
       await _logLoginAttempt(userCredential.user!.uid, true);
@@ -240,6 +239,11 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return; // Check mounted before proceeding
 
       final user = UserModel.fromFirestore(userDoc);
+
+      // Armazene também a senha do admin se for admin
+      if (user.role == UserRole.admin) {
+        await _storage.write(key: 'admin_password', value: password);
+      }
 
       // Reset attempts after successful login
       _loginAttempts = 0;
@@ -250,9 +254,8 @@ class _LoginScreenState extends State<LoginScreen>
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder:
-              (context, animation, secondaryAnimation) =>
-                  _navigateToDashboard(user),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              _navigateToDashboard(user),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -414,115 +417,114 @@ class _LoginScreenState extends State<LoginScreen>
     showDialog(
       context: context,
       barrierDismissible: false, // Prevents dismissing by tapping outside
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(
-              'Recuperar Senha',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryBlue,
-              ),
-            ),
-            content: TextField(
-              controller: recuperacaoController,
-              decoration: InputDecoration(
-                labelText: 'Email de recuperação',
-                prefixIcon: const Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  recuperacaoController.dispose();
-                  Navigator.of(dialogContext).pop();
-                },
-                child: Text(
-                  'Cancelar',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final email = recuperacaoController.text.trim();
-                  if (email.isEmpty) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Por favor, insira um email',
-                          style: GoogleFonts.poppins(),
-                        ),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                    return;
-                  }
-
-                  try {
-                    await FirebaseAuth.instance.sendPasswordResetEmail(
-                      email: email,
-                    );
-
-                    // Dispose controller before popping dialog
-                    recuperacaoController.dispose();
-                    Navigator.of(dialogContext).pop();
-
-                    // Show success message using the parent context
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Email de recuperação enviado',
-                            style: GoogleFonts.poppins(),
-                          ),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    // Show error message using dialog context
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Erro ao enviar email de recuperação: ${e is FirebaseAuthException ? _getErrorMessage(e) : 'Erro desconhecido'}',
-                          style: GoogleFonts.poppins(),
-                        ),
-                        backgroundColor: Colors.red,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'Enviar',
-                  style: GoogleFonts.poppins(color: Colors.white),
-                ),
-              ),
-            ],
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Recuperar Senha',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryBlue,
           ),
+        ),
+        content: TextField(
+          controller: recuperacaoController,
+          decoration: InputDecoration(
+            labelText: 'Email de recuperação',
+            prefixIcon: const Icon(Icons.email),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              recuperacaoController.dispose();
+              Navigator.of(dialogContext).pop();
+            },
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = recuperacaoController.text.trim();
+              if (email.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Por favor, insira um email',
+                      style: GoogleFonts.poppins(),
+                    ),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+                return;
+              }
+
+              try {
+                await FirebaseAuth.instance.sendPasswordResetEmail(
+                  email: email,
+                );
+
+                // Dispose controller before popping dialog
+                recuperacaoController.dispose();
+                Navigator.of(dialogContext).pop();
+
+                // Show success message using the parent context
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Email de recuperação enviado',
+                        style: GoogleFonts.poppins(),
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                // Show error message using dialog context
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Erro ao enviar email de recuperação: ${e is FirebaseAuthException ? _getErrorMessage(e) : 'Erro desconhecido'}',
+                      style: GoogleFonts.poppins(),
+                    ),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBlue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Enviar',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -567,10 +569,9 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               // Logo animado
               ShaderMask(
-                shaderCallback:
-                    (bounds) => LinearGradient(
-                      colors: [AppColors.primaryBlue, Colors.purple],
-                    ).createShader(bounds),
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [AppColors.primaryBlue, Colors.purple],
+                ).createShader(bounds),
                 child: const Icon(Icons.school, size: 80, color: Colors.white),
               ),
               const SizedBox(height: 24),
@@ -730,20 +731,19 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                     elevation: 5,
                   ),
-                  child:
-                      _isLoading
-                          ? const CircularProgressIndicator(
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        )
+                      : const Text(
+                          'Entrar',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            strokeWidth: 3,
-                          )
-                          : const Text(
-                            'Entrar',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
                           ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
