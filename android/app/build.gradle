@@ -29,7 +29,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.sistema_escolar"
-    compileSdkVersion 35
+    compileSdkVersion 35 // Atualizar para 35
     ndkVersion "27.0.12077973"
 
     compileOptions {
@@ -47,10 +47,11 @@ android {
 
     defaultConfig {
         applicationId "com.example.sistema_escolar"
-        minSdkVersion 23
-        targetSdkVersion 35
+        minSdkVersion 23 // Flutter local notifications requer pelo menos 21
+        targetSdkVersion 33 // Mantenha isso como 33 por enquanto
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
     }
 
     buildTypes {

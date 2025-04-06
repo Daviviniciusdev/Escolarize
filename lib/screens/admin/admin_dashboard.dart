@@ -7,6 +7,7 @@ import 'package:Escolarize/screens/admin/admin_class_management.dart';
 import 'package:Escolarize/screens/admin/admin_profile_screen.dart';
 import 'package:Escolarize/screens/admin/admin_student_management.dart';
 import 'package:Escolarize/screens/admin/admin_user_management.dart';
+import 'package:Escolarize/screens/admin/certificate_request_screen.dart';
 import 'package:Escolarize/screens/login_pages/login_screen.dart';
 import 'package:Escolarize/utils/app_colors.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
@@ -182,7 +183,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
         children: List.generate(
-          6,
+          7,
           (index) => AnimationConfiguration.staggeredGrid(
             position: index,
             duration: Duration(milliseconds: 375),
@@ -250,6 +251,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
             builder: (context) => AdminReportScreen(adminUser: widget.user),
           ),
         ),
+      ),
+      DashboardItem(
+        icon: Icons.description,
+        label: 'Gestão de\nAtestados',
+        color: Colors.indigo,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CertificateRequestsScreen(),
+            ),
+          );
+        },
       ),
       DashboardItem(
         icon: Icons.settings,

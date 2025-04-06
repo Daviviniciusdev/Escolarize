@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api, unused_element, avoid_print, unused_field
 
+import 'package:Escolarize/screens/student/request_certificate_screen.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -71,12 +72,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => AlunoNotasScreen(
-              alunoId: widget.user.id, // ID do aluno logado
-              alunoNome: widget.user.name, // Nome do aluno logado
-              turma: widget.user.serie, // Turma do aluno (se disponível)
-            ),
+        builder: (context) => AlunoNotasScreen(
+          alunoId: widget.user.id, // ID do aluno logado
+          alunoNome: widget.user.name, // Nome do aluno logado
+          turma: widget.user.serie, // Turma do aluno (se disponível)
+        ),
       ),
     );
   }
@@ -154,17 +154,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildWelcomeCard() {
     return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.user.id)
-              .snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.user.id)
+          .snapshots(),
       builder: (context, snapshot) {
-        String nomeAluno =
-            snapshot.hasData && snapshot.data!.exists
-                ? (snapshot.data!.data() as Map<String, dynamic>)['nome'] ??
-                    'Aluno'
-                : widget.user.name;
+        String nomeAluno = snapshot.hasData && snapshot.data!.exists
+            ? (snapshot.data!.data() as Map<String, dynamic>)['nome'] ?? 'Aluno'
+            : widget.user.name;
 
         return Container(
           padding: EdgeInsets.all(20),
@@ -223,11 +220,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   // Update the StreamBuilder in _buildAnnouncementsSection()
   Widget _buildAnnouncementsSection() {
     return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('announcements')
-              .where('targetRoles', arrayContainsAny: ['all', 'student'])
-              .snapshots(),
+      stream: FirebaseFirestore.instance.collection('announcements').where(
+          'targetRoles',
+          arrayContainsAny: ['all', 'student']).snapshots(),
       builder: (context, snapshot) {
         bool hasAnnouncements =
             snapshot.hasData && snapshot.data!.docs.isNotEmpty;
@@ -275,10 +270,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             children: [
                               Icon(
                                 Icons.notifications,
-                                color:
-                                    hasAnnouncements
-                                        ? AppColors.primaryBlue
-                                        : Colors.grey[400],
+                                color: hasAnnouncements
+                                    ? AppColors.primaryBlue
+                                    : Colors.grey[400],
                                 size: 24,
                               ),
                               if (hasAnnouncements)
@@ -349,15 +343,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
             icon: Icons.schedule,
             label: 'Horários',
             color: Color(0xFF2196F3),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            ScheduleScreen(turma: widget.user.serie ?? ''),
-                  ),
-                ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ScheduleScreen(turma: widget.user.serie ?? ''),
+              ),
+            ),
           ),
           _buildAnimatedGridItem(
             icon: Icons.book,
@@ -371,17 +363,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
             icon: Icons.align_vertical_bottom,
             label: 'Desempenho\nEscolar',
             color: Color.fromARGB(255, 124, 19, 145),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => DetailedPerformanceScreen(
-                          studentId: widget.user.id,
-                          studentName: widget.user.name,
-                        ),
-                  ),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DetailedPerformanceScreen(
+                  studentId: widget.user.id,
+                  studentName: widget.user.name,
                 ),
+              ),
+            ),
           ),
           _buildAnimatedGridItem(
             icon: Icons.person,
@@ -394,7 +384,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
             label: 'Pedir\nAtestado',
             color: Color.fromARGB(255, 229, 255, 0),
             onTap: () {
-              _desenvolvimento();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      RequestCertificateScreen(user: widget.user),
+                ),
+              );
             },
           ),
         ],
@@ -494,58 +490,56 @@ class _StudentDashboardState extends State<StudentDashboard> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            builder:
-                (_, controller) => Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      // Handle bar
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        height: 4,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      // Header
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Avisos',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryBlue,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Content
-                      Expanded(child: AnnouncementsWidget(userRole: 'student')),
-                    ],
-                  ),
-                ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(20),
+            ),
           ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Avisos',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryBlue,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              // Content
+              Expanded(child: AnnouncementsWidget(userRole: 'student')),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -554,11 +548,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     try {
       // Buscar todos os professores da coleção users
-      QuerySnapshot teachersQuery =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .where('role', isEqualTo: 'teacher')
-              .get();
+      QuerySnapshot teachersQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'teacher')
+          .get();
 
       print('Encontrados ${teachersQuery.docs.length} professores'); // Debug
 
@@ -570,11 +563,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         print('Professor: $teacherName, ID: $teacherId'); // Debug
 
         // Buscar matérias do professor na coleção teachers
-        DocumentSnapshot teacherMateriasDoc =
-            await FirebaseFirestore.instance
-                .collection('teachers')
-                .doc(teacherId)
-                .get();
+        DocumentSnapshot teacherMateriasDoc = await FirebaseFirestore.instance
+            .collection('teachers')
+            .doc(teacherId)
+            .get();
 
         if (teacherMateriasDoc.exists) {
           var materiasData = teacherMateriasDoc.data() as Map<String, dynamic>;
@@ -673,8 +665,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               backgroundColor: Colors.white,
                               child: CircleAvatar(
                                 radius: 58,
-                                backgroundColor: AppColors.primaryBlue
-                                    .withOpacity(0.9),
+                                backgroundColor:
+                                    AppColors.primaryBlue.withOpacity(0.9),
                                 child: Icon(
                                   Icons.person,
                                   size: 60,
@@ -805,8 +797,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           return Center(child: CircularProgressIndicator());
         }
 
-        final data =
-            snapshot.data ??
+        final data = snapshot.data ??
             {
               'mediaGeral': '0.0',
               'frequencia': '0',
@@ -841,11 +832,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
 
       // Buscar notas do aluno
-      final notasDoc =
-          await FirebaseFirestore.instance
-              .collection('notas')
-              .doc(userId)
-              .get();
+      final notasDoc = await FirebaseFirestore.instance
+          .collection('notas')
+          .doc(userId)
+          .get();
 
       // Calcular média geral considerando todos os ciclos
       double mediaGeral = 0.0;
@@ -873,20 +863,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
 
       // Buscar registros de frequência do aluno
-      final frequenciaQuery =
-          await FirebaseFirestore.instance
-              .collection('frequencia')
-              .where('presencas.$userId', isEqualTo: true)
-              .get();
+      final frequenciaQuery = await FirebaseFirestore.instance
+          .collection('frequencia')
+          .where('presencas.$userId', isEqualTo: true)
+          .get();
 
       int aulasPresente = frequenciaQuery.docs.length;
 
       // Buscar total de aulas da turma
-      final turmaRef =
-          await FirebaseFirestore.instance
-              .collection('frequencia')
-              .where('turma', isEqualTo: widget.user.serie)
-              .get();
+      final turmaRef = await FirebaseFirestore.instance
+          .collection('frequencia')
+          .where('turma', isEqualTo: widget.user.serie)
+          .get();
 
       int totalAulas = turmaRef.docs.length;
 
@@ -1042,7 +1030,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Widget _buildLogoutButton() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _handleLogout(),
@@ -1065,27 +1053,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (!mounted) return;
 
     try {
-      bool confirm =
-          await showDialog(
+      bool confirm = await showDialog(
             context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: Text('Confirmar Saída'),
-                  content: Text('Deseja realmente sair da sua conta?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text('Cancelar'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      child: Text('Sair'),
-                    ),
-                  ],
+            builder: (context) => AlertDialog(
+              title: Text('Confirmar Saída'),
+              content: Text('Deseja realmente sair da sua conta?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text('Cancelar'),
                 ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  child: Text('Sair'),
+                ),
+              ],
+            ),
           ) ??
           false;
 
@@ -1143,8 +1129,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
           ],
         ),
-        children: children,
         initiallyExpanded: true,
+        children: children,
       ),
     );
   }
@@ -1207,67 +1193,66 @@ class _StudentDashboardState extends State<StudentDashboard> {
   void _desenvolvimento() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Wrap(
+          children: [
+            Icon(
+              Icons.construction,
+              color: AppColors.primaryBlue,
+              size: 28,
             ),
-            title: Wrap(
-              children: [
-                Icon(
-                  Icons.construction,
-                  color: AppColors.primaryBlue,
-                  size: 28,
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Em Desenvolvimento',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
-              ],
-            ),
-            content: Container(
-              width: double.maxFinite,
-              constraints: BoxConstraints(maxWidth: 300),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Esta funcionalidade está em desenvolvimento e estará disponível em breve!',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[800],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Icon(Icons.engineering, size: 48, color: Colors.grey[400]),
-                ],
+            SizedBox(width: 12),
+            Text(
+              'Em Desenvolvimento',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryBlue,
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          constraints: BoxConstraints(maxWidth: 300),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Text(
-                  'OK, Entendi',
+                  'Esta funcionalidade está em desenvolvimento e estará disponível em breve!',
                   style: GoogleFonts.poppins(
-                    color: AppColors.primaryBlue,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: Colors.grey[800],
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
+              SizedBox(height: 16),
+              Icon(Icons.engineering, size: 48, color: Colors.grey[400]),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK, Entendi',
+              style: GoogleFonts.poppins(
+                color: AppColors.primaryBlue,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

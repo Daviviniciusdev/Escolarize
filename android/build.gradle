@@ -8,7 +8,8 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:7.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // Add this line
+        // Mantemos o Google Services plugin pois é necessário para Firebase Core
+        // não apenas para notificações
         classpath 'com.google.gms:google-services:4.4.1'
     }
 }
