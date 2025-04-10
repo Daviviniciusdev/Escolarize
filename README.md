@@ -11,6 +11,7 @@ O Escolarize é um aplicativo móvel desenvolvido para facilitar a gestão escol
 - 👨‍🎓 Gestão de Alunos
 - 👨‍🏫 Gestão de Professores
 - 📊 Controle de Notas
+- 📝Gestão de atestados
 - 📝 Sistema de Comunicados
 - 📅 Agenda Escolar
 - 📋 Relatórios de Desempenho
@@ -82,9 +83,3 @@ Este projeto está sob a licença MIT - veja o arquivo [LICENSE.md](LICENSE.md) 
 ## ✒️ Autores
 
 * **Davi Vinicius** - *Desenvolvimento Inicial* - [Daviviniciusdev](https://github.com/Daviviniciusdev)
-
-## 🎁 Expressões de Gratidão
-
-* Compartilhe este projeto 📢
-* Convide alguém da equipe para uma cerveja 🍺
-* Um agradecimento publicamente 🫂
