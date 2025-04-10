@@ -27,18 +27,24 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.example.sistema_escolar"
     compileSdkVersion 35 // Atualizar para 35
     ndkVersion "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+    	targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -46,17 +52,26 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.sistema_escolar"
+        applicationId "com.devhorizon.escolarize"
         minSdkVersion 23 // Flutter local notifications requer pelo menos 21
-        targetSdkVersion 33 // Mantenha isso como 33 por enquanto
+        targetSdkVersion 34 // Mantenha isso como 33 por enquanto
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
     }
 
+	signingConfigs {
+		release {
+			storeFile file(keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null)
+			storePassword keystoreProperties['storePassword']
+			keyAlias keystoreProperties['keyAlias']
+			keyPassword keystoreProperties['keyPassword']
+		}
+	}
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 }
